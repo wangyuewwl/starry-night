@@ -1,0 +1,154 @@
+const int redLED = 11;
+const int greenLED = 10;
+const int blueLED = 9;
+const int redLED1 = 6;
+const int greenLED1 = 5;
+const int blueLED1 = 3;
+
+const int buttonSwitch = 2;
+const int lightSensor = A0;
+
+int redLEDValue = 255;
+int greenLEDValue = 255;
+int blueLEDValue = 255;
+
+int lightSensorValue = 0;
+float brightness = 0; 
+
+int buttonState = 0;         // current state of the button
+int lastButtonState = 0;
+int mode = 0;
+
+// For RGB blinking
+int ledState = LOW;             // ledState used to set the LED
+
+unsigned long previousMillis = 0;        // will store last time LED was updated
+
+const long interval = 1000;           // interval at which to blink (milliseconds)
+
+// For RGB fading
+long int fade_goTime;
+int fade_break = 15;
+
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  pinMode(redLED, OUTPUT);
+  pinMode(greenLED, OUTPUT);
+  pinMode(blueLED, OUTPUT);
+  pinMode(redLED1, OUTPUT);
+  pinMode(greenLED1, OUTPUT);
+  pinMode(blueLED1, OUTPUT);
+  pinMode(lightSensor, INPUT);
+  pinMode(buttonSwitch, INPUT);
+  fade_goTime = millis();
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+ unsigned long currentMillis = millis();
+ 
+  buttonState = digitalRead(buttonSwitch);
+  if (buttonState != lastButtonState) {
+    if (buttonState == HIGH) {
+      mode = (mode + 1) % 4;
+    }
+    lastButtonState = buttonState;
+  }
+  
+  if (mode == 0) {
+    analogWrite(redLED, 255);
+    analogWrite(greenLED, 255);
+    analogWrite(blueLED, 255);
+    analogWrite(redLED1, 255);
+    analogWrite(greenLED1, 255);
+    analogWrite(blueLED1, 255);
+  }
+  if (mode == 1) {
+    if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+    if (ledState == LOW) {
+      ledState = HIGH;
+    } else {
+      ledState = LOW;
+    }
+    redLEDValue = random(0, 255);
+    greenLEDValue = random(0, 255);
+    blueLEDValue = random(0, 255);
+    analogWrite(redLED, redLEDValue);
+    analogWrite(greenLED, greenLEDValue);
+    analogWrite(blueLED, blueLEDValue);
+    analogWrite(redLED1, 255 - redLEDValue);
+    analogWrite(greenLED1, 255 - greenLEDValue);
+    analogWrite(blueLED1, 255 - blueLEDValue);
+    Serial.print("Twiknle Mode RGB Random ");
+    Serial.print(redLEDValue);
+    Serial.print(" ");
+    Serial.print(greenLEDValue);
+    Serial.print(" ");
+    Serial.println(blueLEDValue);
+  }
+  }
+  
+  if (mode == 2) {
+  if(  millis() >= fade_goTime) fade();
+}
+  if (mode == 3) {
+    lightSensorValue = analogRead(lightSensor);
+    Serial.print("lightSensorValue = ");
+    Serial.println(lightSensorValue);
+    lightSensorValue = constrain(lightSensorValue, 600, 1000);
+    lightSensorValue = 1000 - lightSensorValue;
+    redLEDValue = map(lightSensorValue, 0, 400, 255, 0);
+    greenLEDValue = map(lightSensorValue, 0, 400, 255, 0);
+    blueLEDValue = map(lightSensorValue, 0, 400, 255, 0);
+    analogWrite(redLED, redLEDValue);
+    analogWrite(greenLED, greenLEDValue);
+    analogWrite(blueLED, blueLEDValue);
+    analogWrite(redLED1, redLEDValue);
+    analogWrite(greenLED1, greenLEDValue);
+    analogWrite(blueLED1, blueLEDValue);
+  }
+}
+
+
+void fade() {
+  static unsigned int rgbColour[3] = {255,0,0}; //Start on red
+  static int incColour = 1;
+  static int decColour = 0;
+  static int i = -1;
+      
+      // cross-fade the two colours.
+      i++;
+      if(i > 255) {
+        i=0;
+        decColour ++;
+        if(decColour >2) decColour = 0;      
+        if (decColour == 2)  incColour = 0;
+        else incColour = decColour +1;
+      }
+        rgbColour[decColour] -= 1;
+        rgbColour[incColour] += 1;
+       
+        setColourRgb(rgbColour[0], rgbColour[1], rgbColour[2]);      
+       fade_goTime = millis() + fade_break;       
+   }
+
+void setColourRgb(unsigned int red, unsigned int green, unsigned int blue) {
+    red = constrain(red, 0, 255);
+    green = constrain(green, 0, 255);
+    blue = constrain(blue, 0, 255);
+    analogWrite(redLED, red);
+    analogWrite(greenLED, green);
+    analogWrite(blueLED, blue);
+    analogWrite(redLED1, red);
+    analogWrite(greenLED1, green);
+    analogWrite(blueLED1, blue);
+    Serial.print("Crossfade Mode RGB Fade ");
+    Serial.print(red);
+    Serial.print(" ");
+    Serial.print(green);
+    Serial.print(" ");
+    Serial.println(blue);
+ }
